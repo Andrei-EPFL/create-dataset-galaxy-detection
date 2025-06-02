@@ -130,10 +130,15 @@ if __name__ == "__main__":
     max_dec = 10
 
     # Perhaps we should fix a seed or do a regular grid survey, so that running the script to generate the reference dataset is reproducible
-    ras = np.random.random(n_images) * (max_ra - min_ra) + min_ra
-    decs = np.random.random(n_images) * (max_dec - min_dec) + min_dec
+    # random generation of ra and dec
+    # ras = np.random.random(n_images) * (max_ra - min_ra) + min_ra
+    # decs = np.random.random(n_images) * (max_dec - min_dec) + min_dec
 
-    for idx, (ra, dec) in enumerate(zip(ras, decs)):
+    ra = min_ra
+    dec = min_dec
+    for idx in range(n_images):
+        ra = ra + delta_ra
+        dec = dec + delta_dec
 
         image_xyc, ellipses_df, image_meta_df = query_single_image(
             RA=ra,
