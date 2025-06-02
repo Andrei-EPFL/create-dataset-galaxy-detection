@@ -134,6 +134,9 @@ if __name__ == "__main__":
     # ras = np.random.random(n_images) * (max_ra - min_ra) + min_ra
     # decs = np.random.random(n_images) * (max_dec - min_dec) + min_dec
 
+    delta_ra = (max_ra - min_ra) / n_images
+    delta_dec = (max_dec - min_dec) / n_images
+
     ra = min_ra
     dec = min_dec
     for idx in range(n_images):
