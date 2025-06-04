@@ -6,3 +6,4 @@ requests
 tifffile
 ipykernel
 matplotlib
+spotiflow
