@@ -1,0 +1,8 @@
+astropy
+astroquery
+numpy
+pandas
+requests
+tifffile
+ipykernel
+matplotlib

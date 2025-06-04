@@ -8,6 +8,7 @@ import pandas as pd
 import tifffile
 from astropy.coordinates import Angle  # Angles
 from astropy.coordinates import SkyCoord  # High-level coordinates
+from astropy.wcs import WCS
 
 from desi import DESILegacySurvey
 
@@ -32,24 +33,29 @@ def query_single_image(
     source = SkyCoord(ra_s, dec_s, unit="degree")
     rad_a = Angle(Radius * u.arcmin)
 
-    query_i_raw = DESILegacySurvey.get_images(
-        position=source,
-        survey="dr%d" % dr,
-        coordinates="icrs",
-        data_release=dr,
-        pixels=npix,
-        radius=image_size,
-        image_band=image_band,
-    )
+    try:
+        query_i_raw = DESILegacySurvey.get_images(
+            position=source,
+            survey="dr%d" % dr,
+            coordinates="icrs",
+            data_release=dr,
+            pixels=npix,
+            radius=image_size,
+            image_band=image_band,
+        )
+
+        query_c = DESILegacySurvey.query_region(
+            coordinates=source,
+            radius=rad_a,
+            data_release=dr,
+        )
+    except Exception as e:
+        print("Failed to get that image or region.")
+        return
 
     hdu_i_raw = query_i_raw[0][0]
     image_i_raw = hdu_i_raw.data  # Three channels, one per band
-
-    query_c = DESILegacySurvey.query_region(
-        coordinates=source,
-        radius=rad_a,
-        data_release=dr,
-    )
+    w = WCS(hdu_i_raw.header)
 
     s_r = query_c["shape_r"]
     s_e1 = query_c["shape_e1"]
@@ -58,13 +64,17 @@ def query_single_image(
     dec_c = query_c["dec"]
     type_c = query_c["type"]
 
+    # Add x and y in pixels
+    coord = SkyCoord(ra_c, dec_c, unit="degree")
+    x, y, _ = w.world_to_pixel(coord, u.Quantity(10))
+
     epsilon = np.sqrt(s_e1**2 + s_e2**2)
     b_o_a = (1 - epsilon) / (1 + epsilon)
     phi = (0.5 * np.arctan(s_e2 / s_e1)) * (180 / np.pi)
 
     records = []
-    for i, (ra_1, dec_1, s_r_1, t_1, b_o_a_1, phi_1) in enumerate(
-        zip(ra_c, dec_c, s_r + psf_width, type_c, b_o_a, phi)
+    for i, (ra_1, dec_1, s_r_1, t_1, b_o_a_1, phi_1, x_1, y_1) in enumerate(
+        zip(ra_c, dec_c, s_r + psf_width, type_c, b_o_a, phi, x ,y)
     ):
         if s_e1[i] < 0 and s_e2[i] < 0:
             a_phi_1 = -phi_1
@@ -95,6 +105,8 @@ def query_single_image(
                 "width": width,
                 "height": height,
                 "angle": angle,
+                "idx_x_ra": int(x_1),
+                "idx_y_dec": int(y_1)
             }
         )
 
@@ -143,7 +155,7 @@ if __name__ == "__main__":
         ra = ra + delta_ra
         dec = dec + delta_dec
 
-        image_xyc, ellipses_df, image_meta_df = query_single_image(
+        query_payload = query_single_image(
             RA=ra,
             DEC=dec,
             Radius=0.5,
@@ -152,6 +164,12 @@ if __name__ == "__main__":
             data_release=10,
             psf_width=1.5,  # To check
         )
+        if query_payload is None:
+            with open('log.txt', 'a') as file:
+                file.write(f'Could not download image: {idx:03d}.\n')
+            continue
+
+        image_xyc, ellipses_df, image_meta_df = query_payload
 
         image_dir = Path(out_dir) / f"{idx:03d}"
         
