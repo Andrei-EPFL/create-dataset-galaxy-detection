@@ -1,6 +1,6 @@
 # create-dataset-galaxy-detection
 
-Steps:
+## Steps:
 1) Install the requirements from: ``` requirements.txt ```
 2) Download: ```desi.py``` and ```create_reference_dataset.py```
 3) Usage:
@@ -8,7 +8,21 @@ Steps:
    python create_reference_dataset.py <OUT DIR> <number of images>
 ```
 
-Default parameters:
+## Possible changes:
+store the float values of the pixel "index":
+```
+"idx_x_ra": int(x_1)
+"idx_y_dec": int(y_1)
+```
+
+to
+
+```
+"idx_x_ra": x_1
+"idx_y_dec": y_1
+```
+
+## Default parameters:
 
     # The borders of the sky region to insure data access. (could be updated from https://www.legacysurvey.org/status/ info)
     # Units: degrees
